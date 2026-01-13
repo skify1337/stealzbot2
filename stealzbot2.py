@@ -26,7 +26,6 @@ TIER_ROLES = {
 }
 ALLOWED_CHANNEL = 1451552947300204594  # Канал для команд
 STATS_CHANNEL = 1174883465066451016  # Канал для статистики
-MAX_ACTIVE_VZP = 15
 MAX_PARTICIPANTS_PER_VZP = 100
 
 # ===================== PERSISTENT VIEWS =====================
@@ -304,13 +303,6 @@ async def handle_vzp_button(interaction: discord.Interaction, vzp_id: str):
     if is_in_list:
         del vzp_data.plus_users[user.id]
     else:
-        if len(vzp_data.plus_users) >= vzp_data.members:
-            await interaction.response.send_message(
-                "Достигнут лимит участников для этой VZP!",
-                ephemeral=True
-            )
-            return
-        
         vzp_data.plus_users[user.id] = tier
 
     await update_vzp_message(vzp_id)
