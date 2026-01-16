@@ -295,14 +295,6 @@ async def handle_vzp_button(interaction: discord.Interaction, vzp_id: str):
         )
         return
     
-    # Проверка на лимит участников для этой конкретной VZP
-    if len(vzp_data.plus_users) >= vzp_data.members:
-        await interaction.response.send_message(
-            f"Достигнут лимит участников для этой VZP ({vzp_data.members})!",
-            ephemeral=True
-        )
-        return
-    
     # Проверка на абсолютный максимум
     if len(vzp_data.plus_users) >= MAX_PARTICIPANTS_PER_VZP:
         await interaction.response.send_message(
