@@ -18,14 +18,14 @@ if not TOKEN:
     exit(1)
 
 # ===================== НАСТРОЙКИ =====================
-HIGH_ROLES = [1174860973522288780, 1089620679021842605, 1174878142259793962, 1245089436723581042]  # Роли админов
+HIGH_ROLES = [1459596990907154464, 1459596990286659748]  # Роли админов
 TIER_ROLES = {
-    1: 1458095828722909224,  # Тир 1
-    2: 1458095871810867250,  # Тир 2
-    3: 1458095875460173938   # Тир 3
+    1: 1459596980652212286,  # Тир 1
+    2: 1459596988776452106,  # Тир 2
+    3: 1459596989632352266   # Тир 3
 }
-ALLOWED_CHANNEL = 1451552947300204594  # Канал для команд
-STATS_CHANNEL = 1174883465066451016  # Канал для статистики
+ALLOWED_CHANNEL = 1459596938537336926  # Канал для команд
+STATS_CHANNEL = 1460007959806349505  # Канал для статистики
 MAX_PARTICIPANTS_PER_VZP = 100
 MAX_ACTIVE_VZP = 10
 MIN_PARTICIPANTS_PER_VZP = 1
@@ -602,7 +602,7 @@ async def post_vzp_result(vzp_id: str, result: str, amount: int, guild: discord.
             new_name = new_member.display_name if new_member else f"ID:{new_user_id}"
             swap_info.append(f"• {new_name} заменил {old_name}")
         
-        if swap_list:
+        if swap_info:
             embed.add_field(
                 name="🔄 ЗАМЕНЫ",
                 value="\n".join(swap_info),
@@ -962,6 +962,9 @@ async def start_vzp(interaction: discord.Interaction, vzp_id: str):
         )
         return
     
+    # Отвечаем сразу, чтобы Discord знал, что бот обрабатывает команду
+    await interaction.response.defer(thinking=True, ephemeral=True)
+    
     vzp_data = active_vzp[vzp_id]
     vzp_data.status = 'VZP IN PROCESS'
     
@@ -1015,6 +1018,14 @@ async def start_vzp(interaction: discord.Interaction, vzp_id: str):
     )
     
     save_data()
+    
+    # Отправляем финальный ответ
+    await interaction.followup.send(
+        f"VZP `{vzp_id}` запущена! Создана категория с каналами.\n"
+        f"Перемещено в голосовой: {moved_count}/{len(members_to_move)} игроков\n"
+        f"Отправлено уведомлений: {notified}",
+        ephemeral=True
+    )
 
 @bot.tree.command(name="stop_reactions", description="Остановить приём заявок на VZP")
 @app_commands.describe(vzp_id="ID VZP")
@@ -1118,17 +1129,20 @@ async def swap_player(interaction: discord.Interaction, vzp_id: str, old_player:
         )
         return
     
+    # Отвечаем сразу
+    await interaction.response.defer(thinking=True, ephemeral=True)
+    
     vzp_data = active_vzp[vzp_id]
     
     if old_player.id not in vzp_data.plus_users:
-        await interaction.response.send_message(
+        await interaction.followup.send(
             f"❌ Игрок {old_player.mention} не найден в списке VZП `{vzp_id}`!",
             ephemeral=True
         )
         return
     
     if new_player.id in vzp_data.plus_users:
-        await interaction.response.send_message(
+        await interaction.followup.send(
             f"❌ Игрок {new_player.mention} уже в основном списке VZП!",
             ephemeral=True
         )
@@ -1136,7 +1150,7 @@ async def swap_player(interaction: discord.Interaction, vzp_id: str, old_player:
     
     new_player_tier = await get_user_tier(new_player)
     if not new_player_tier:
-        await interaction.response.send_message(
+        await interaction.followup.send(
             f"❌ У игрока {new_player.mention} нет необходимой роли для участия в VZП!",
             ephemeral=True
         )
@@ -1187,7 +1201,7 @@ async def swap_player(interaction: discord.Interaction, vzp_id: str, old_player:
     
     success_embed.set_footer(text=f"Выполнено: {interaction.user.display_name} | {datetime.now().strftime('%d.%m.%Y %H:%M')}")
     
-    await interaction.response.send_message(embed=success_embed, ephemeral=True)
+    await interaction.followup.send(embed=success_embed, ephemeral=True)
     
     try:
         old_embed = discord.Embed(
@@ -1256,6 +1270,9 @@ async def close_vzp(interaction: discord.Interaction, vzp_id: str, enemy: str, r
         )
         return
     
+    # Отвечаем сразу, чтобы Discord знал, что бот обрабатывает команду
+    await interaction.response.defer(thinking=True, ephemeral=True)
+    
     vzp_data = active_vzp[vzp_id]
     
     vzp_data.enemy = enemy
@@ -1314,8 +1331,12 @@ async def close_vzp(interaction: discord.Interaction, vzp_id: str, enemy: str, r
     
     save_data()
     
-    await interaction.response.send_message(
-        f"✅ VZP `{vzp_id}` успешно закрыта! Результат: {result.name}, Противник: {enemy}, Точки: {amount}",
+    # Отправляем финальный ответ
+    await interaction.followup.send(
+        f"VZP `{vzp_id}` успешно закрыта!\n"
+        f"Результат: **{result.name}**\n"
+        f"Противник: **{enemy}**\n"
+        f"Точки: **{amount}**\n"
         ephemeral=True
     )
 
@@ -1843,7 +1864,7 @@ async def voice_status(interaction: discord.Interaction):
     
     vzp_swaps = swap_history.get(vzp_id, {})
     if vzp_swaps:
-        swap_list = []
+        swap_list = []  # Переименовано с swap_info на swap_list для согласованности
         for old_user_id, new_user_id in vzp_swaps.items():
             old_member = interaction.guild.get_member(old_user_id)
             new_member = interaction.guild.get_member(new_user_id)
@@ -1854,7 +1875,7 @@ async def voice_status(interaction: discord.Interaction):
             status_circle = "🟢" if new_user_id in players_in_voice else "🔴"
             swap_list.append(f"• {new_name} {status_circle} → {old_name}")
         
-        if swap_list:
+        if swap_list:  # Исправлено с swap_info на swap_list
             embed.add_field(
                 name="**🔄 ЗАМЕНЫ**",
                 value="\n".join(swap_list),
